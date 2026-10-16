@@ -1,0 +1,341 @@
+{
+  "head": {
+    "vars": [
+      "scheme",
+      "notation",
+      "label",
+      "version"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "http://unstats.un.org/classifications/COICOP/1999/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "COICOP1999"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "Classification of Individual Consumption According to Purpose (COICOP) 1999"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "1999"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://metadata.officialstatistics.org/classifications/icatus#ICATUS2016"
+        },
+        "notation": {
+          "type": "literal",
+          "datatype": "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral",
+          "value": "ICATUS2016"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "International Classification of Activities for Time-Use Statistics 2016"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/NOCS/FAO-associate-members"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "FAO-associate-members"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/NOCS/FAOmembers"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "NOCS"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "Names of Countries and Territories (NOCS)"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "07-2021"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/NOCS/nonFAO-members"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "NOCS"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "NOCS non-FAO members"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "07-2021"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/NOCS/territories"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "NOCS"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "NOCS Territories members"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/CPC/v2.1/FAO-fisheries"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "CPC21FI"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Central Product Classification (CPC) v2.1. Items relevant to FAO Fisheries and Aquaculture"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/FCL/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "FCL"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The FAOSTAT Commodity List (FCL)"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "1.0"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/FPCD/v2022/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "FPCD2022"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "Forest Products Classification and Definitions (FPC&D) v2022"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "2022"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/ICC/v1.0/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "ICC10"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Indicative Crop Classification for the Agricultural Census (ICC) Version 1.0"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "1.0"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/ICC/v1.1/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "ICC11"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Indicative Crop Classification for the World Agricultural Census (ICC) Version 1.1"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "1.1"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/WCA2020/crops/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "WCACROPS"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "FAO WCA2020 Crop List"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "2020"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://stats.fao.org/classifications/geo/M49/fao/M49-FAO"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "M49 FAO"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://unstats.un.org/classifications/CPC/v2.0/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "CPC20"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Central Product Classification (CPC) v2.0"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "2.0"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://unstats.un.org/classifications/CPC/v2.1/ag"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "CPC21AG"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Central Product Classification (CPC) v2.1. Expansion for agriculture and rural statistics"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "2.1 ag expanded"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://unstats.un.org/classifications/CPC/v2.1/core"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "CPC21"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "The Central Product Classification (CPC) v2.1"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "2.1"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://unstats.un.org/classifications/ISIC/rev4/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "ISIC4"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "ISIC vRev4"
+        },
+        "version": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "Rev4"
+        }
+      },
+      {
+        "scheme": {
+          "type": "uri",
+          "value": "https://unstats.un.org/classifications/geo/M49/scheme"
+        },
+        "notation": {
+          "type": "literal",
+          "value": "M49-UNSD"
+        },
+        "label": {
+          "type": "literal",
+          "xml:lang": "en",
+          "value": "Standard Country or Area Codes for Statistical Use (M49)"
+        },
+        "version": {
+          "type": "literal",
+          "value": "current"
+        }
+      }
+    ]
+  }
+}

@@ -17,6 +17,7 @@ class UnAuthorityTest {
   private ArrayNode terms;
   private int status;
   private String lastQuery;
+  private final java.util.concurrent.atomic.AtomicInteger requests = new java.util.concurrent.atomic.AtomicInteger();
   private static final String S = "https://stats.fao.org/classifications/ICC/v1.1/scheme";
   private static final String ROOT = "https://stats.fao.org/classifications/ICC/v1.1/1";
   private static final String RYE = "https://stats.fao.org/classifications/ICC/v1.1/1-06";
@@ -39,6 +40,7 @@ class UnAuthorityTest {
     triple(RYE, "broader", ROOT, true, "");
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext("/sparql", exchange -> {
+      requests.incrementAndGet();
       lastQuery = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals("POST", exchange.getRequestMethod());
       assertTrue(exchange.getRequestHeaders().getFirst("Content-Type").startsWith("application/sparql-query"));
@@ -62,7 +64,7 @@ class UnAuthorityTest {
     server.start();
     endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/sparql";
   }
-  @AfterEach void cleanup() { server.stop(0); }
+  @AfterEach void cleanup() { if (server != null) server.stop(0); authority.close(); }
   private void scheme(String uri, String notation, String label) {
     var row = catalogue.addObject();
     binding(row, "scheme", uri, true, ""); binding(row, "notation", notation, false, ""); binding(row, "label", label, false, "en");
@@ -227,5 +229,73 @@ class UnAuthorityTest {
     assertThrows(IllegalStateException.class, this::configure);
     status = 200; catalogue.removeAll();
     assertThrows(IllegalStateException.class, this::configure);
+  }
+
+  private ConfigurationRequest countrySnapshotRequest() {
+    String scheme = "https://unstats.un.org/classifications/geo/M49/scheme";
+    scheme(scheme, "M49-UNSD", "M49"); terms.removeAll();
+    String world = "https://unstats.un.org/classifications/geo/M49/001";
+    String europe = "https://unstats.un.org/classifications/geo/M49/150";
+    String spain = "https://unstats.un.org/classifications/geo/M49/724";
+    for (String uri : List.of(world, europe, spain)) triple(uri, "inScheme", S, true, "");
+    triple(world, "prefLabel", "World", false, "en");
+    triple(europe, "prefLabel", "Europe", false, "en");
+    triple(spain, "prefLabel", "Spain", false, "en");
+    triple(spain, "notation", "724", false, "");
+    triple(europe, "broader", world, true, "");triple(spain, "broader", europe, true, "");
+    var evidence = terms.addObject(); binding(evidence, "concept", spain, true, "");
+    binding(evidence, "p", Vocabulary.COUNTRY_EVIDENCE, true, "");
+    binding(evidence, "value", UnAuthority.M49_COUNTRY, false, "");
+    return request("UN.M49", "geography:GeographicalIdentity", Map.of("catalog", "M49",
+        "semanticBoundaries", Map.of("M49_COUNTRY", "geography:Country")));
+  }
+
+  @Test void configuredCountrySchemeRestoresOfflineWithHierarchySearchAndReconciliation() throws Exception {
+    var request = countrySnapshotRequest();var id = authority.configure(request);
+    var snapshot = authority.captureConfiguration(id);int configuredRequests = requests.get();
+    assertEquals(2, configuredRequests);server.stop(0);server = null;
+    try (var offline = new UnAuthority()) {
+      var restored = offline.restoreConfiguration(request, snapshot);
+      assertEquals(new CachePolicy("caliper-skos-2",0,0,0), offline.getCachePolicy());
+      var spain = offline.resolveIdentity(restored,"724");
+      assertEquals("Spain",spain.getLabel());assertEquals(HierarchyStatus.DEFERRED,spain.getHierarchyStatus());
+      assertTrue(spain.getSemanticBoundaries().contains("M49_COUNTRY"));assertTrue(spain.getParentIds().isEmpty());
+      var europe = offline.resolveIdentity(restored,"https://unstats.un.org/classifications/geo/M49/150");
+      assertFalse(europe.getSemanticBoundaries().contains("M49_COUNTRY"));assertEquals(HierarchyStatus.COMPLETE,europe.getHierarchyStatus());
+      assertEquals(List.of("https://unstats.un.org/classifications/geo/M49/150"),
+          offline.resolveIdentity(restored,"724",ResolutionMode.FULL_HIERARCHY).getParentIds());
+      assertEquals("Spain",offline.search("Spain",null,restored).getFirst().getLabel());
+      assertEquals(spain.getId(),offline.reconcile(restored,Map.of("name","Spain")).getId());
+      assertEquals(configuredRequests,requests.get());
+      offline.releaseConfiguration(restored);assertThrows(IllegalArgumentException.class,()->offline.resolveIdentity(restored,"724"));
+    }
+  }
+
+  @Test void configuredSnapshotIsDeterministicAndIndependentOfRdfRowOrder() throws Exception {
+    var request = countrySnapshotRequest();var first = authority.captureConfiguration(authority.configure(request));
+    var reversed = SparqlClient.JSON.createArrayNode();for(int i=terms.size()-1;i>=0;i--)reversed.add(terms.get(i));terms=reversed;
+    var second = authority.captureConfiguration(authority.configure(request));
+    assertArrayEquals(first.state(),second.state());
+    var changed = first.state();changed[0]=0;assertNotEquals(0,first.state()[0]);
+    var parameters = new HashMap<>(request.parameters());parameters.put("language","es");
+    var different = new ConfigurationRequest(request.worldview(),request.name(),request.rootIdentity(),parameters);
+    try(var offline=new UnAuthority()) {
+      assertThrows(IllegalArgumentException.class,()->offline.restoreConfiguration(different,first));
+      var wrongFormat=new org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot("unknown",UnAuthority.URN,request,first.state());
+      assertThrows(IllegalArgumentException.class,()->offline.restoreConfiguration(request,wrongFormat));
+      var data=SparqlClient.JSON.readTree(first.state());((ObjectNode)data.path("classification")).put("scheme","https://different.invalid/scheme");
+      var wrongEdition=new org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot(first.format(),first.providerUrn(),request,SparqlClient.JSON.writeValueAsBytes(data));
+      assertThrows(IllegalStateException.class,()->offline.restoreConfiguration(request,wrongEdition));
+    }
+  }
+
+  @Test void restoreRejectsMalformedStateAndCloseReleasesOwnedBridges() throws Exception {
+    var request=countrySnapshotRequest();var captured=authority.captureConfiguration(authority.configure(request));
+    var malformed=new org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot(captured.format(),captured.providerUrn(),request,"null".getBytes(StandardCharsets.UTF_8));
+    try(var offline=new UnAuthority()) {
+      assertThrows(IllegalArgumentException.class,()->offline.restoreConfiguration(request,malformed));
+      var restored=offline.restoreConfiguration(request,captured);offline.close();
+      assertThrows(IllegalArgumentException.class,()->offline.resolveIdentity(restored,"724"));
+    }
   }
 }

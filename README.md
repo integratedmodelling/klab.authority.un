@@ -135,6 +135,30 @@ that view. Undeclared dotted names are not inferred by the Reasoner: declare eac
 
 ## Identity and hierarchy
 
+### Independently owned configured snapshots
+
+The provider implements the optional `SnapshottingAuthority` capture contract.
+`captureConfiguration(id)` exports the selected scheme/edition, language, search
+limit and bounded SKOS vocabulary (including parent edges and attested country
+membership) as a deterministic `un-caliper-skos-v1` snapshot. RDF row ordering does
+not change its bytes. `restoreConfiguration(request, snapshot)` validates the exact
+request and format, reconstructs an independent bridge and validates the frozen
+hierarchy without contacting Caliper. Identity, full-hierarchy, search and
+reconciliation operations on that bridge use the same frozen vocabulary.
+
+Snapshot state is limited to 32 MiB by the shared API and 200,000 vocabulary rows
+by this provider. The normal `configure` route still discovers and loads live
+data. Its zero response-cache lifetimes remain zero: an explicitly owned configured
+snapshot is not permission to retain mutable results in the persistent response
+cache. Reloading/capturing a new configuration is the boundary for selecting new
+upstream content. `close()` releases all owned bridge state and HTTP clients.
+
+Use matching Services/API and component builds for this optional contract. Candidate
+compilation restores the proved state offline; accepted lookups keep that state,
+rather than silently configuring a newer edition on their first request.
+
+### Canonical identities and hierarchy
+
 - The canonical ID is the published RDF concept URI. Unique `skos:notation` strings are accepted as
   lookup aliases; ambiguous codes fail and require explicit URI selection. Labels are never implicit
   code lookups. URI suffixes are not assumed to be codes: ICC `1.06` has URI suffix `1-06`.

@@ -14,12 +14,21 @@ final class Vocabulary {
   private final Map<String, Set<String>> notations = new HashMap<>();
   final Classification classification;
   private final String language;
+  private final JsonNode frozenRows;
 
   Vocabulary(Classification classification, String language, JsonNode rows) {
     this.classification = classification;
     this.language = language;
     if (rows.size() > MAX_ROWS)
       throw new IllegalStateException("Classification exceeds " + MAX_ROWS + " rows");
+    try {
+      var canonical = SparqlClient.JSON.copy().enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+      var sorted = new TreeSet<String>();
+      for (var row : rows) sorted.add(canonical.writeValueAsString(canonical.convertValue(row, Map.class)));
+      var frozen = canonical.createArrayNode();
+      for (var row : sorted) frozen.add(canonical.readTree(row));
+      frozenRows = frozen;
+    } catch (java.io.IOException failure) { throw new IllegalArgumentException("Cannot freeze vocabulary", failure); }
     for (var row : rows) {
       if (!"uri".equals(row.path("concept").path("type").asText()))
         throw new IllegalStateException("SKOS concept must be an IRI");
@@ -58,6 +67,8 @@ final class Vocabulary {
     if (terms.values().stream().noneMatch(t -> t.member))
       throw new IllegalStateException("Snapshot omitted selected scheme membership");
   }
+
+  JsonNode snapshotRows() { return frozenRows.deepCopy(); }
 
   static String query(Classification classification) {
     String scheme = SparqlClient.iri(classification.scheme());

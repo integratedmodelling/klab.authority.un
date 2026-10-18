@@ -32,7 +32,7 @@ import org.integratedmodelling.klab.api.services.runtime.Notification;
       "NOCS_TERRITORIES",
       "NOCS_ASSOCIATE"
     })
-public final class UnAuthority implements Authority {
+public final class UnAuthority implements org.integratedmodelling.klab.api.services.SnapshottingAuthority {
   public static final String URN = "klab.authority.un";
   public static final String M49_COUNTRY = "M49_COUNTRY";
   public static final String ENDPOINT = "https://caliper.integratedmodelling.org/caliper/sparql";
@@ -171,9 +171,73 @@ public final class UnAuthority implements Authority {
     return id;
   }
 
+  private static final String SNAPSHOT_FORMAT = "un-caliper-skos-v1";
+  private record SnapshotState(Classification classification, String language, int searchLimit,
+      com.fasterxml.jackson.databind.JsonNode rows) {}
+
+  @Override
+  public org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot captureConfiguration(String id) {
+    var bridge = bridge(id);
+    try {
+      var mapper = SparqlClient.JSON.copy().enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+      var state = new SnapshotState(bridge.vocabulary.classification,
+          string(bridge.request.parameters().getOrDefault("language", "en"), "language").toLowerCase(Locale.ROOT),
+          bridge.limit, bridge.vocabulary.snapshotRows());
+      return new org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot(
+          SNAPSHOT_FORMAT, URN, bridge.request, mapper.writeValueAsBytes(state));
+    } catch (java.io.IOException failure) { throw new IllegalStateException("Cannot capture configured UN state", failure); }
+  }
+
+  @Override
+  public String restoreConfiguration(ConfigurationRequest request,
+      org.integratedmodelling.klab.api.services.ConfiguredAuthoritySnapshot snapshot) {
+    if (!SNAPSHOT_FORMAT.equals(snapshot.format()) || !URN.equals(snapshot.providerUrn())
+        || !snapshot.request().equals(request) || !URN.equals(request.parameters().get("urn")))
+      throw new IllegalArgumentException("UN snapshot configuration or format differs");
+    var p = request.parameters();
+    for (var key : p.keySet()) if (!PARAMETERS.contains(key)) throw new IllegalArgumentException("Unknown UN parameter: " + key);
+    int limit = integer(p, "searchLimit", 25, 1, 100);
+    integer(p, "timeoutSeconds", 45, 1, 180);
+    SparqlClient.endpoint(p.getOrDefault("endpoint", ENDPOINT)); // validate only; never fetch
+    String language = string(p.getOrDefault("language", "en"), "language").toLowerCase(Locale.ROOT);
+    if (!language.matches("[a-z]{2,8}(-[a-z0-9]{1,8})*") || (p.containsKey("catalog") && p.containsKey("schemeUri")))
+      throw new IllegalArgumentException("Invalid frozen UN configuration");
+    try {
+      SnapshotState state = SparqlClient.JSON.readerFor(SnapshotState.class)
+          .with(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+          .readValue(snapshot.state());
+      if (state == null || state.classification == null || state.rows == null || !state.rows.isArray()
+          || !language.equals(state.language) || state.searchLimit != limit)
+        throw new IllegalArgumentException("UN snapshot parameters differ");
+      var c = state.classification;
+      if (c.id() == null || c.family() == null || c.version() == null || c.label() == null)
+        throw new IllegalArgumentException("Incomplete UN classification snapshot");
+      SparqlClient.iri(c.scheme());
+      String selected = p.containsKey("catalog") ? string(p.get("catalog"), "catalog") : catalog;
+      if (p.containsKey("schemeUri")) {
+        if (catalog != null || !c.scheme().equals(p.get("schemeUri"))) throw new IllegalArgumentException("UN snapshot scheme differs");
+      } else if (selected == null || !(selected.equals(c.id()) || selected.equals(c.family()))
+          || (catalog != null && !catalog.equals(selected))) throw new IllegalArgumentException("UN snapshot edition differs");
+      var supported = new HashSet<>(List.of(c.id(), c.family()));
+      if (c.family().equals("M49")) supported.add(M49_COUNTRY);
+      request.requireSupportedBoundaries(supported);
+      var vocabulary = new Vocabulary(c, language, state.rows);
+      // Validate every frozen edge before admitting the state, including unrequested ancestors.
+      for (var term : vocabulary.terms.values()) vocabulary.validateHierarchy(term);
+      String id = UUID.randomUUID().toString();
+      bridges.put(id, new Bridge(request, vocabulary, limit));
+      advertised.put(c.id(), c); advertised.put(c.family(), c);
+      return id;
+    } catch (java.io.IOException failure) { throw new IllegalArgumentException("Invalid UN snapshot payload", failure); }
+  }
+
   @Override
   public void releaseConfiguration(String id) {
     if (id != null) bridges.remove(id);
+  }
+
+  @Override public void close() {
+    bridges.clear(); views.clear(); client.close();
   }
 
   @Override

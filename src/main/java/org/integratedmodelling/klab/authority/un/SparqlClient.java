@@ -13,6 +13,7 @@ import java.util.concurrent.Flow.Subscription;
 
 /** Read-only SPARQL protocol client. Uses only JDK HTTP and the host's Jackson ABI. */
 final class SparqlClient {
+  void close() { http.close(); }
   private static final int MAX_BYTES = 32 * 1024 * 1024;
   private final HttpClient http =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
